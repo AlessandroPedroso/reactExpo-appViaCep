@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   StyleSheet,
   Text,
@@ -6,11 +6,42 @@ import {
   TextInput,
   TouchableOpacity,
   SafeAreaView,
+  Keyboard
 } from "react-native";
 import api from "./src/services/api";
 
 export default function App() {
   const [cep, setCep] = useState("");
+  const [cepUser, setCepUser] = useState(null);
+  const inputRef = useRef(null);
+
+  function limpar() {
+    setCep("");
+    setCepUser(null)
+    inputRef.current.focus();
+
+  }
+
+  async function buscar() {
+
+    if (cep == "") {
+      alert("Digite um cep valido")
+      setCep("");
+      return;
+    }
+
+    try {
+
+      const response = await api.get(`/${cep}/json`);
+      setCepUser(response.data)
+      Keyboard.dismiss(); //Garantir que o teclado sera fechado
+    } catch (error) {
+      console.log('ERROR: ' + error)
+    }
+
+
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={{ alignItems: "center" }}>
@@ -21,29 +52,37 @@ export default function App() {
           value={cep}
           onChangeText={(texto) => setCep(texto)}
           keyboardType="numeric"
+          ref={inputRef}
         />
       </View>
 
       <View style={styles.areaBtn}>
         <TouchableOpacity
           style={[styles.botao, { backgroundColor: "#1D75CD" }]}
+          onPress={buscar}
         >
           <Text style={styles.botaoText}>Buscar</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.botao, { backgroundColor: "#CD3E1D" }]}
+          onPress={limpar}
         >
           <Text style={styles.botaoText}>Limpar</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.resultados}>
-        <Text style={styles.itemText}>CEP: 79000000</Text>
-        <Text style={styles.itemText}>Logradouro: 79000000</Text>
-        <Text style={styles.itemText}>Bairro: 79000000</Text>
-        <Text style={styles.itemText}>Cidade: 79000000</Text>
-        <Text style={styles.itemText}>Estado: 79000000</Text>
-      </View>
+      {cepUser &&
+        <View style={styles.resultados}>
+          <Text style={styles.itemText}>CEP: {cepUser.cep}</Text>
+          <Text style={styles.itemText}>Logradouro: {cepUser.logradouro}</Text>
+          <Text style={styles.itemText}>Bairro: {cepUser.bairro}</Text>
+          <Text style={styles.itemText}>Cidade: {cepUser.localidade}</Text>
+          <Text style={styles.itemText}>Estado: {cepUser.uf}</Text>
+        </View>
+      }
+
+
     </SafeAreaView>
   );
 }
@@ -51,6 +90,7 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#FFF"
   },
 
   text: {
